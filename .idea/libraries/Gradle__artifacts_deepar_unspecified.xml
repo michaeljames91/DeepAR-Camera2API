@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Gradle: artifacts:deepar:unspecified">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/deepar.aar/6e47364da2ea29d5839cc3e1285faffa/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/deepar.aar/6e47364da2ea29d5839cc3e1285faffa/res" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-1/files-1.1/deepar.aar/6e47364da2ea29d5839cc3e1285faffa/AndroidManifest.xml" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
