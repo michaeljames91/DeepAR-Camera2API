@@ -80,8 +80,7 @@ import ai.deepar.ar.AREventListener;
 import ai.deepar.ar.DeepAR;
 
 public class Camera2BasicFragment extends Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener,
-        SurfaceHolder.Callback {
+        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener{
 
     private static final String LICENSE_KEY = "799718806c5c1db1498ec74f99da2b31e8ba8a503eae4c4d122d05f463c1fc69cdebcbd1ff078e99";
 
@@ -141,6 +140,8 @@ public class Camera2BasicFragment extends Fragment
      */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
 
+    private int prevWidth, prevHeight;
+
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
      * {@link TextureView}.
@@ -150,6 +151,8 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
+            prevWidth = width;
+            prevHeight = height;
             initializeDeepAR();
             openCamera(width, height);
         }
@@ -161,11 +164,15 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
+            Log.e("Surface", "Surface Destroyed");
+            if (deepAR != null)
+                deepAR.setRenderSurface(null, 0, 0);
             return true;
         }
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture texture) {
+            deepAR.setRenderSurface(new Surface(texture), 640, 480);
         }
 
     };
@@ -268,8 +275,10 @@ public class Camera2BasicFragment extends Fragment
             ByteBuffer buffer = image.getPlanes()[0].getBuffer();
             byte[] bytes = new byte[buffer.remaining()];
 //            byte[] bytes = new byte[buffer.capacity()];
+            int rotation = getActivity().getWindowManager().getDefaultDisplay().getRotation();
 
-            deepAR.receiveFrame(buffer.get(bytes), mTextureView.getWidth(), mTextureView.getHeight(), mSensorOrientation, true);
+            deepAR.receiveFrame(buffer.get(bytes), 640, 480, getOrientation(rotation), false);
+//            deepAR.receiveFrame(buffer.get(bytes), mTextureView.getWidth(), mTextureView.getHeight(), getOrientation(rotation), false);
 
             image.close();
         }
@@ -278,15 +287,13 @@ public class Camera2BasicFragment extends Fragment
 
     private void setFilter(){
         deepAR.switchEffect("filter", getFilterPath("lion"));
-//        deepAR.switchEffect("mask_f0",getFilterPath("flowers"),1);
-//        deepAR.switchEffect("mask_f0",getFilterPath("flowers"),1);
     }
 
     private String getFilterPath(String filterName) {
         if (filterName.equals("none")) {
             return null;
         }
-        Toast.makeText(getContext(), "Filter: "+ filterName, Toast.LENGTH_LONG).show();
+        showToast("Filter: "+ filterName);
         return "file:///android_asset/" + filterName;
     }
 
@@ -473,12 +480,6 @@ public class Camera2BasicFragment extends Fragment
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        arView = (SurfaceView) view.findViewById(R.id.arSurface);
-
-        arView.getHolder().addCallback(this);
-        arView.setOnClickListener(this);
-        arView.setVisibility(View.GONE);
-        arView.setVisibility(View.VISIBLE);
     }
 
     @Override
@@ -509,6 +510,17 @@ public class Camera2BasicFragment extends Fragment
         closeCamera();
         stopBackgroundThread();
         super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (deepAR == null) {
+            return;
+        }
+        deepAR.setAREventListener(null);
+        deepAR.release();
+        deepAR = null;
     }
 
     private void requestCameraPermission() {
@@ -950,10 +962,6 @@ public class Camera2BasicFragment extends Fragment
                 takePicture();
                 break;
             }
-            case R.id.arSurface: {
-                deepAR.onClick();
-                break;
-            }
             case R.id.info: {
                 setFilter();
 //                Activity activity = getActivity();
@@ -976,7 +984,7 @@ public class Camera2BasicFragment extends Fragment
     }
 
     private void initializeDeepAR() {
-        if (deepAR != null) return;
+        if (deepAR!=null) return;
         deepAR = new DeepAR(getContext());
         deepAR.setLicenseKey(LICENSE_KEY);
         deepAR.initialize(getContext(), this);
@@ -1040,25 +1048,6 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void effectSwitched(String s) {
 
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder surfaceHolder) {
-
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
-        if (deepAR == null)
-            initializeDeepAR();
-        deepAR.setRenderSurface(surfaceHolder.getSurface(), width, height);
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-        if (deepAR != null) {
-            deepAR.setRenderSurface(null, 0, 0);
-        }
     }
 
     /**
