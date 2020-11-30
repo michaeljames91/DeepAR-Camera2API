@@ -83,7 +83,7 @@ public class Camera2BasicFragment extends Fragment
         implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener,
         SurfaceHolder.Callback {
 
-    private static final String LICENSE_KEY = "799718806c5c1db1498ec74f99da2b31e8ba8a503eae4c4d122d05f463c1fc69cdebcbd1ff078e99";
+    private static final String LICENSE_KEY = "2fe3733784b1886ed201cc6c38953849467a2033eed756c7e264a1ba2a24d6df85f7eae06b6b00ce";
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -248,6 +248,9 @@ public class Camera2BasicFragment extends Fragment
      */
     private File mFile;
 
+    private ByteBuffer[] buffers;
+    private int currentBuffer = 0;
+
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
@@ -263,15 +266,15 @@ public class Camera2BasicFragment extends Fragment
             //Added by Yudha | Edit
 //            Log.d(TAG, "I'm an image frame!");
 
-            Image image =  reader.acquireNextImage();
+            Image image =  reader.acquireLatestImage();
 
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] bytes = new byte[buffer.remaining()];
-//            byte[] bytes = new byte[buffer.capacity()];
-
-            deepAR.receiveFrame(buffer.get(bytes), mTextureView.getWidth(), mTextureView.getHeight(), mSensorOrientation, true);
-
-            image.close();
+            if (image != null && deepAR != null) {
+                buffers[currentBuffer].put(image.getPlanes()[0].getBuffer().array());
+                buffers[currentBuffer].position(0);
+                deepAR.receiveFrame(buffers[currentBuffer], mTextureView.getWidth(), mTextureView.getHeight(), mSensorOrientation, true);
+                currentBuffer = ( currentBuffer + 1 ) % 2;
+                image.close();
+            }
         }
 
     };
