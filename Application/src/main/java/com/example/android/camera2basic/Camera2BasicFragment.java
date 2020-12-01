@@ -264,12 +264,12 @@ public class Camera2BasicFragment extends Fragment
 
             image =  reader.acquireLatestImage();
             buffer = image.getPlanes()[0].getBuffer();
+            buffer.rewind();
             bytes = new byte[buffer.capacity()];
             buffer.get(bytes);
-            buffer.position(0);
 
             if (frameReceiver != null) {
-                frameReceiver.receiveFrame(buffer, mTextureView.getWidth(), mTextureView.getHeight(), mSensorOrientation, true);
+                frameReceiver.receiveFrame(buffer, 640, 480, mSensorOrientation, true);
             }
 
             image.close();
@@ -278,7 +278,7 @@ public class Camera2BasicFragment extends Fragment
     };
 
     private void setFilter(){
-        frameReceiver.switchEffect("filter", getFilterPath("lion"));
+        frameReceiver.switchEffect("filter", getFilterPath("blizzard"));
 //        deepAR.switchEffect("mask_f0",getFilterPath("flowers"),1);
 //        deepAR.switchEffect("mask_f0",getFilterPath("flowers"),1);
     }
@@ -567,8 +567,8 @@ public class Camera2BasicFragment extends Fragment
                         Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)),
                         new CompareSizesByArea());
                 //Added by Yudha | Edit
-                mImageReader = ImageReader.newInstance(largest.getWidth() / 16, largest.getHeight() / 16,
-                        ImageFormat.YUV_420_888, /*maxImages*/2);
+                mImageReader = ImageReader.newInstance(640, 480,
+                        ImageFormat.YUV_420_888, /*maxImages*/5);
                 mImageReader.setOnImageAvailableListener(
                         mOnImageAvailableListener, mBackgroundHandler);
 
@@ -1047,7 +1047,9 @@ public class Camera2BasicFragment extends Fragment
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
-
+        if (frameReceiver == null)
+            initializeDeepAR();
+        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
     }
 
     @Override
