@@ -165,14 +165,14 @@ public class Camera2BasicFragment extends Fragment
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
             Log.e("Surface", "Surface Destroyed");
-            if (deepAR != null)
-                deepAR.setRenderSurface(null, 0, 0);
+            if (frameReceiver != null)
+                frameReceiver.setRenderSurface(null, 0, 0);
             return true;
         }
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture texture) {
-            deepAR.setRenderSurface(new Surface(texture), 640, 480);
+            frameReceiver.setRenderSurface(new Surface(texture), 640, 480);
         }
 
     };
@@ -472,20 +472,11 @@ public class Camera2BasicFragment extends Fragment
         return inflater.inflate(R.layout.fragment_camera2_basic, container, false);
     }
 
-    SurfaceView arView;
-
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-        arView = (SurfaceView) view.findViewById(R.id.arSurface);
-
-        arView.getHolder().addCallback(this);
-        arView.setOnClickListener(this);
-        arView.setVisibility(View.GONE);
-        arView.setVisibility(View.VISIBLE);
-
         initializeDeepAR();
     }
 
@@ -522,12 +513,12 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (deepAR == null) {
+        if (frameReceiver == null) {
             return;
         }
-        deepAR.setAREventListener(null);
-        deepAR.release();
-        deepAR = null;
+        frameReceiver.setAREventListener(null);
+        frameReceiver.release();
+        frameReceiver = null;
     }
 
     private void requestCameraPermission() {
@@ -969,10 +960,6 @@ public class Camera2BasicFragment extends Fragment
                 takePicture();
                 break;
             }
-            case R.id.arSurface: {
-                frameReceiver.onClick();
-                break;
-            }
             case R.id.info: {
                 setFilter();
                 break;
@@ -1052,27 +1039,6 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public void effectSwitched(String s) {
 
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        if (frameReceiver == null)
-            initializeDeepAR();
-        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int format, int width, int height) {
-        if (frameReceiver == null)
-            initializeDeepAR();
-        frameReceiver.setRenderSurface(surfaceHolder.getSurface(), width, height);
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-        if (frameReceiver != null) {
-            frameReceiver.setRenderSurface(null, 0, 0);
-        }
     }
     
     /**
