@@ -80,8 +80,7 @@ import ai.deepar.ar.AREventListener;
 import ai.deepar.ar.DeepAR;
 
 public class Camera2BasicFragment extends Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener,
-        SurfaceHolder.Callback {
+        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback, AREventListener{
 
     private static final String LICENSE_KEY = "6326be1f073882d456539bf29ab840d23b217fff7905fcb4f376fd8ab1678cbfa83a65691c90905d";
 
@@ -141,6 +140,8 @@ public class Camera2BasicFragment extends Fragment
      */
     private static final int MAX_PREVIEW_HEIGHT = 1080;
 
+    private int prevWidth, prevHeight;
+
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
      * {@link TextureView}.
@@ -150,6 +151,8 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
+            prevWidth = width;
+            prevHeight = height;
             initializeDeepAR();
             openCamera(width, height);
         }
@@ -161,11 +164,15 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
+            Log.e("Surface", "Surface Destroyed");
+            if (deepAR != null)
+                deepAR.setRenderSurface(null, 0, 0);
             return true;
         }
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture texture) {
+            deepAR.setRenderSurface(new Surface(texture), 640, 480);
         }
 
     };
@@ -279,15 +286,13 @@ public class Camera2BasicFragment extends Fragment
 
     private void setFilter(){
         frameReceiver.switchEffect("filter", getFilterPath("blizzard"));
-//        deepAR.switchEffect("mask_f0",getFilterPath("flowers"),1);
-//        deepAR.switchEffect("mask_f0",getFilterPath("flowers"),1);
     }
 
     private String getFilterPath(String filterName) {
         if (filterName.equals("none")) {
             return null;
         }
-        Toast.makeText(getContext(), "Filter: "+ filterName, Toast.LENGTH_LONG).show();
+        showToast("Filter: "+ filterName);
         return "file:///android_asset/" + filterName;
     }
 
@@ -512,6 +517,17 @@ public class Camera2BasicFragment extends Fragment
         closeCamera();
         stopBackgroundThread();
         super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (deepAR == null) {
+            return;
+        }
+        deepAR.setAREventListener(null);
+        deepAR.release();
+        deepAR = null;
     }
 
     private void requestCameraPermission() {
@@ -959,13 +975,6 @@ public class Camera2BasicFragment extends Fragment
             }
             case R.id.info: {
                 setFilter();
-//                Activity activity = getActivity();
-//                if (null != activity) {
-//                    new AlertDialog.Builder(activity)
-//                            .setMessage(R.string.intro_message)
-//                            .setPositiveButton(android.R.string.ok, null)
-//                            .show();
-//                }
                 break;
             }
         }
@@ -1065,7 +1074,7 @@ public class Camera2BasicFragment extends Fragment
             frameReceiver.setRenderSurface(null, 0, 0);
         }
     }
-
+    
     /**
      * Saves a JPEG {@link Image} into the specified {@link File}.
      */
